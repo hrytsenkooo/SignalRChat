@@ -1,0 +1,92 @@
+﻿@page "/chat"
+@inject ChatUI.Services.IChatService ChatService
+@inject IJSRuntime JSRuntime
+
+<div class="chat-container">
+    @if (ChatService.IsConnected)
+    {
+        <div class="chat-window">
+            <div id="message-list">
+                <MessageList Messages="ChatService.Messages" />
+            </div>
+            <div class="chat-footer">
+                <div class="message-input">
+                    <input @bind="CurrentMessage" @onkeydown="CheckEnterKey" placeholder="Type your message..." />
+                    <button @onclick="SendMessage">Send</button>
+                </div>
+                <button class="exit-chat-button" @onclick="ExitChat">Exit Chat</button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="register-container">
+            <h2>Welcome to the Chat!</h2>
+            <input @bind="userName" placeholder="Enter your display name" />
+            <button @onclick="ConnectToChat">Join chat</button>
+        </div>
+    }
+</div>
+
+@code {
+    private string userName;
+    private string CurrentMessage = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender || ChatService.IsConnected)
+        {
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ConnectToChat()
+    {
+        if (!string.IsNullOrWhiteSpace(userName))
+        {
+            await ChatService.ConnectAsync(userName);
+            ChatService.MessagesUpdated += StateHasChanged;
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(CurrentMessage))
+        {
+            await ChatService.SendMessageAsync(userName, CurrentMessage);
+            CurrentMessage = string.Empty;
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task CheckEnterKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task ExitChat()
+    {
+        if (!string.IsNullOrEmpty(userName))
+        {
+            await ChatService.DisconnectAsync(userName);
+            ChatService.MessagesUpdated -= StateHasChanged;
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await JSRuntime.InvokeVoidAsync("scrollToBottom", "message-list");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (ChatService is IAsyncDisposable disposable)
+        {
+            await disposable.DisposeAsync();
+        }
+    }
+}

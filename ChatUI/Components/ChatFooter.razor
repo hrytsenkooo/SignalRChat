@@ -1,0 +1,34 @@
+﻿<div class="chat-footer">
+    <div class="message-input">
+        <input @bind="CurrentMessage" @onkeydown="CheckEnterKey" placeholder="Type your message..." />
+        <button @onclick="SendMessage">Send</button>
+    </div>
+    <button class="exit-chat-button" @onclick="() => OnExitChat.InvokeAsync()">Exit Chat</button>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnSendMessage { get; set; }
+
+    [Parameter]
+    public EventCallback OnExitChat { get; set; }
+
+    private string CurrentMessage { get; set; } = "";
+
+    private async Task CheckEnterKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(CurrentMessage))
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(CurrentMessage))
+        {
+            await OnSendMessage.InvokeAsync(CurrentMessage);
+            CurrentMessage = string.Empty;
+        }
+    }
+}

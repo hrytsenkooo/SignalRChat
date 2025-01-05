@@ -1,0 +1,10 @@
+﻿@using ChatUI.Models
+@foreach (var message in Messages)
+{
+    <MessageItem Message="message" />
+}
+
+@code {
+    [Parameter]
+    public IReadOnlyList<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
+}

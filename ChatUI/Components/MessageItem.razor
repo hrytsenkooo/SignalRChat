@@ -1,0 +1,29 @@
+﻿@using ChatUI.Models
+
+<li class="@GetCssClass()">
+    @if (!Message.IsSystemMessage)
+    {
+        <span class="timestamp">[@Message.Timestamp]</span>
+        <strong>@(Message.IsCurrentUser ? "You" : Message.UserName):</strong> <span>@Message.Text</span>
+    }
+    else
+    {
+        <span>@Message.Content</span>
+    }
+</li>
+
+@code {
+    [Parameter] public ChatMessage Message { get; set; }
+    [Parameter] public string UserName { get; set; }
+
+    private string GetCssClass()
+    {
+        if (Message.IsSystemMessage) return "system-message";
+        return Message.Sentiment switch
+        {
+            "Positive" => "positive-message",
+            "Negative" => "negative-message",
+            _ => "neutral-message"
+        };
+    }
+}

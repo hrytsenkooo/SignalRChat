@@ -1,0 +1,21 @@
+﻿<div class="register-container">
+    <h3>Welcome to the Chat!</h3>
+    <label for="name">Enter your display name:</label>
+    <input id="name" @bind="UserName" class="form-control" />
+    <button @onclick="SubmitRegistration" class="btn btn-primary">Join Chat</button>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnConnect { get; set; }
+
+    private string UserName { get; set; } = "";
+
+    private async Task SubmitRegistration()
+    {
+        if (!string.IsNullOrWhiteSpace(UserName))
+        {
+            await OnConnect.InvokeAsync(UserName);
+        }
+    }
+}
