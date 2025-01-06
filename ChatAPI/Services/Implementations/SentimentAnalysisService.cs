@@ -15,6 +15,7 @@ namespace ChatAPI.Services.Implementations
             _client = new TextAnalyticsClient(client, credentials);
         }
 
+        // Analyzes the sentiment of the given message and returns the sentiment as a string
         public async Task<string> AnalyzeSentimentAsync(string message)
         {
             var response = await _client.AnalyzeSentimentAsync(message);

@@ -1,89 +1,110 @@
 ﻿@page "/chat"
-@inject ChatUI.Services.IChatService ChatService
+@using ChatUI.Models
+@using ChatUI.Services
+@inject IChatService ChatService
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <div class="chat-container">
     @if (ChatService.IsConnected)
     {
-        <div class="chat-window">
-            <div id="message-list">
+        <div class="chat-box">
+            <ul id="message-list">
                 <MessageList Messages="ChatService.Messages" />
-            </div>
-            <div class="chat-footer">
-                <div class="message-input">
-                    <input @bind="CurrentMessage" @onkeydown="CheckEnterKey" placeholder="Type your message..." />
-                    <button @onclick="SendMessage">Send</button>
-                </div>
-                <button class="exit-chat-button" @onclick="ExitChat">Exit Chat</button>
-            </div>
+            </ul>
+
+            <ChatFooter OnSendMessage="SendMessage" OnExitChat="ExitChat" />
         </div>
     }
     else
     {
-        <div class="register-container">
-            <h2>Welcome to the Chat!</h2>
-            <input @bind="userName" placeholder="Enter your display name" />
-            <button @onclick="ConnectToChat">Join chat</button>
+        <div class="register-container animated fadeIn">
+            <h3 class="welcome-text">Welcome to the Chat!</h3>
+            <label for="name">Enter your display name:</label>
+            <input id="name" @bind="userName" class="form-control" />
+            <button @onclick="ConnectToChat" class="btn btn-primary">Join Chat</button>
         </div>
     }
 </div>
 
 @code {
-    private string userName;
-    private string CurrentMessage = "";
+    private string userName = "";
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnInitialized()
     {
-        if (firstRender || ChatService.IsConnected)
-        {
-            await ScrollToBottom();
-        }
+        ChatService.MessagesUpdated += OnMessagesUpdated;
     }
 
     private async Task ConnectToChat()
     {
-        if (!string.IsNullOrWhiteSpace(userName))
+        if (string.IsNullOrWhiteSpace(userName)) return;
+
+        try
         {
             await ChatService.ConnectAsync(userName);
-            ChatService.MessagesUpdated += StateHasChanged;
             await ScrollToBottom();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error connecting to chat: {ex.Message}");
         }
     }
 
-    private async Task SendMessage()
+    private async Task SendMessage(string message)
     {
-        if (!string.IsNullOrWhiteSpace(CurrentMessage))
+        try
         {
-            await ChatService.SendMessageAsync(userName, CurrentMessage);
-            CurrentMessage = string.Empty;
+            await ChatService.SendMessageAsync(userName, message);
             await ScrollToBottom();
         }
-    }
-
-    private async Task CheckEnterKey(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
+        catch (Exception ex)
         {
-            await SendMessage();
+            Console.WriteLine($"Error sending message: {ex.Message}");
         }
     }
 
     private async Task ExitChat()
     {
-        if (!string.IsNullOrEmpty(userName))
+        try
         {
-            await ChatService.DisconnectAsync(userName);
-            ChatService.MessagesUpdated -= StateHasChanged;
+            if (ChatService.IsConnected)
+            {
+                await ChatService.DisconnectAsync(userName);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error disconnecting from chat: {ex.Message}");
         }
     }
 
     private async Task ScrollToBottom()
     {
-        await JSRuntime.InvokeVoidAsync("scrollToBottom", "message-list");
+        await Task.Delay(100);
+
+        var functionExists = await JSRuntime.InvokeAsync<bool>("eval", "typeof elementExists !== 'undefined'");
+        if (functionExists)
+        {
+            var elementExists = await JSRuntime.InvokeAsync<bool>("elementExists", "message-list");
+            if (elementExists)
+            {
+                await JSRuntime.InvokeVoidAsync("scrollToBottom", "message-list");
+            }
+        }
+    }
+
+    private void OnMessagesUpdated()
+    {
+        InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            await ScrollToBottom();
+        });
     }
 
     public async ValueTask DisposeAsync()
     {
+        ChatService.MessagesUpdated -= OnMessagesUpdated;
         if (ChatService is IAsyncDisposable disposable)
         {
             await disposable.DisposeAsync();

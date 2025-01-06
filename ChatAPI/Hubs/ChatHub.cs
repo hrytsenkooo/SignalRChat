@@ -12,6 +12,7 @@ namespace ChatAPI.Hubs
             this._chatService = chatService;
         }
 
+        // Sends a message to all connected clients
         public async Task SendMessage(string user, string message)
         {
             var processedMessage = await _chatService.ProcessAndSaveMessageAsync(user, message);
@@ -23,6 +24,7 @@ namespace ChatAPI.Hubs
                 processedMessage.Timestamp.ToString("HH:mm"));
         }
 
+        // Loads chat history when a new user connects
         public override async Task OnConnectedAsync()
         {
             var chatHistory = await _chatService.GetChatHistoryAsync();
@@ -31,12 +33,14 @@ namespace ChatAPI.Hubs
             await base.OnConnectedAsync();
         }
 
+        // Handles a user joining the chat
         public async Task JoinChat(string user)
         {
             await Clients.Others.SendAsync("UserJoined", "System", $"{user} joined the chat.");
             await Clients.Caller.SendAsync("UserJoined", "System", "You joined the chat.");
         }
 
+        // Handles a user leaving the chat
         public async Task LeaveChat(string user)
         {
             await Clients.All.SendAsync("UserJoined", "System", $"{user} left the chat.");

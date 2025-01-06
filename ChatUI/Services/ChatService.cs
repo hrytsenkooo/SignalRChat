@@ -17,11 +17,8 @@ namespace ChatUI.Services
             if (string.IsNullOrWhiteSpace(userName))
                 throw new ArgumentException("User name cannot be empty.", nameof(userName));
 
-            var uniqueId = Guid.NewGuid().ToString(); 
-            var uniqueUserName = $"{userName}_{uniqueId}";
-
             _hubConnection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7074/chatHub")
+                .WithUrl("https://chatappweb-g6gjcnh5aeg5f5bd.northeurope-01.azurewebsites.net/chatHub")
                 .Build();
 
             _hubConnection.On<string, string, string, string>("ReceiveMessage", (user, message, sentiment, timestamp) =>
@@ -85,7 +82,6 @@ namespace ChatUI.Services
             {
                 await _hubConnection.InvokeAsync("LeaveChat", userName);
                 await _hubConnection.DisposeAsync();
-                _hubConnection = null;
             }
             IsConnected = false;
             _messages.Clear();
@@ -102,7 +98,18 @@ namespace ChatUI.Services
         {
             if (_hubConnection is not null)
             {
-                await _hubConnection.DisposeAsync();
+                try
+                {
+                    if (_hubConnection.State == HubConnectionState.Connected)
+                    {
+                        await _hubConnection.StopAsync();
+                    }
+                    await _hubConnection.DisposeAsync();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error disposing hubConnection: {ex.Message}");
+                }
             }
         }
     }

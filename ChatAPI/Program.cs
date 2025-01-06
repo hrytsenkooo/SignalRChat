@@ -14,23 +14,35 @@ builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("CorsPolicy", policy =>
     {
         policy.AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials()
-              .WithOrigins("https://localhost:7049");
+              .WithOrigins("https://chatsappui.azurewebsites.net");
     });
 });
 
 builder.Services.AddDbContext<ChatDbContext>(options =>
     options.UseSqlServer(Environment.GetEnvironmentVariable("CONNECTION_STRING")));
 
+builder.Services.AddLogging(logging =>
+{
+    logging.AddConsole();
+    logging.SetMinimumLevel(LogLevel.Debug);
+});
+
+var azureSignalRConnectionString = Environment.GetEnvironmentVariable("AzureSignalR");
+if (string.IsNullOrEmpty(azureSignalRConnectionString))
+{
+    throw new Exception("Azure SignalR connection string is missing.");
+}
+
 builder.Services.AddSignalR().AddAzureSignalR(options =>
 {
-    options.ConnectionString = Environment.GetEnvironmentVariable("AzureSignalR");
+    options.ConnectionString = azureSignalRConnectionString;
 });
-//builder.Services.AddSignalR();
+
 builder.Services.AddTransient<ISentimentAnalysisService, SentimentAnalysisService>(provider =>
     new SentimentAnalysisService(Environment.GetEnvironmentVariable("ENDPOINT_TEXT"), Environment.GetEnvironmentVariable("API_KEY_TEXT")));
 builder.Services.AddScoped<IChatMessageRepository, ChatMessageRepository>();

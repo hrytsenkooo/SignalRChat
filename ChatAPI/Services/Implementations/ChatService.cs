@@ -17,12 +17,15 @@ namespace ChatAPI.Services.Implementations
             this._analysisService = analysisService;
             this._mapper = mapper;
         }
+
+        // Retrieves chat history and maps it to a DTO
         public async Task<List<ChatMessageDto>> GetChatHistoryAsync()
         {
             var messages = await _repository.GetChatHistoryAsync();
             return _mapper.Map<List<ChatMessageDto>>(messages); 
         }
 
+        // Processes a message (including sentiment analysis) and saves it to the repository
         public async Task<ChatMessageDto> ProcessAndSaveMessageAsync(string userName, string message)
         {
             var sentiment = await _analysisService.AnalyzeSentimentAsync(message);

@@ -391,6 +391,7 @@ input {
     padding: 20px;
     color: white;
 }
+
 @keyframes fadeIn {
     0% {
         opacity: 0;
@@ -473,6 +474,7 @@ li.user-message {
     margin-bottom: 10px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
+    height: 450px;
 }
 
 .chat-container {
